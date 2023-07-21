@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/MehwishI/tinyapp/issues"
   },
-  "homepage": "https://github.com/MehwishI/tinyapp#readme"
+  "homepage": "https://github.com/MehwishI/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
 }
