@@ -42,15 +42,21 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 app.post("/urls", (req, res) => {
-  //console.log(req.body);
   const newUrl = req.body;
   newUrl.id = generateRandomString();
-  //const newUrl = { id: req.params.longURL };
-  //console.log(newUrl);
+
   urlDatabase[newUrl.id] = newUrl.longURL;
   res.redirect("/urls");
-  //console.log(urlDatabase);
-  // res.send("OK");
+});
+app.get("/u/:id", (req, res) => {
+  let longURL = "";
+  for (let shortUrl in urlDatabase) {
+    if (shortUrl === req.params.id) {
+      longURL = urlDatabase[shortUrl];
+    }
+  }
+
+  res.redirect(longURL);
 });
 
 app.listen(PORT, () => {
