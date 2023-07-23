@@ -22,6 +22,7 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
+//renders view to show list of all urls
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
@@ -29,7 +30,7 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
-
+//renders a view to show url details
 app.get("/urls/:id", (req, res) => {
   const templateVars = {
     id: req.params.id,
@@ -48,6 +49,7 @@ app.post("/urls", (req, res) => {
   urlDatabase[newUrl.id] = newUrl.longURL;
   res.redirect("/urls");
 });
+//redirects to the long url in browser
 app.get("/u/:id", (req, res) => {
   let longURL = "";
   for (let shortUrl in urlDatabase) {
@@ -55,13 +57,20 @@ app.get("/u/:id", (req, res) => {
       longURL = urlDatabase[shortUrl];
     }
   }
-
   res.redirect(longURL);
 });
+
 //delete
 app.post("/urls/:id/delete", (req, res) => {
   const id = req.params.id;
   delete urlDatabase[id];
+
+  res.redirect("/urls");
+});
+//edit
+app.post("/urls/:id/edit", (req, res) => {
+  const id = req.params.id;
+  urlDatabase[id] = req.body.newLongUrl;
 
   res.redirect("/urls");
 });
