@@ -75,6 +75,12 @@ app.post("/urls/:id/edit", (req, res) => {
   res.redirect("/urls");
 });
 
+app.post("/login", (req, res) => {
+  //set cookie equal to username
+  res.cookie("username", req.body.username);
+  res.redirect("/urls");
+});
+
 app.listen(PORT, () => {
   console.log(`Tinyapp server listening on port ${PORT}!`);
 });
