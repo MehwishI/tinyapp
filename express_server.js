@@ -4,22 +4,48 @@ var cookieParser = require("cookie-parser");
 
 const app = express();
 const PORT = 8080; // default port 8080
+
+//middleware
 app.use(morgan("dev"));
-
 app.use(cookieParser());
+//for POST request, to parse the data sent as buffer into more readable data type
+app.use(express.urlencoded({ extended: true }));
 
+//view engine
 app.set("view engine", "ejs");
 
-function generateRandomString() {
-  return Math.random().toString(36).slice(2, 8);
+function generateRandomString(i) {
+  return Math.random()
+    .toString(36)
+    .slice(2, i + 2);
+}
+//finds the given user email in users object (database) and returns the user
+function getUserByEmail(userEmail) {
+  for (let id in users) {
+    if (users[id].email === userEmail) {
+      return users[id];
+    }
+  }
+  return null;
 }
 
 const urlDatabase = {
   b2xVn2: "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
-//for POST request, to parse the data sent as buffer into more readable data type
-app.use(express.urlencoded({ extended: true }));
+//users database
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -30,16 +56,19 @@ app.get("/hello", (req, res) => {
 
 //renders view to show list of all urls
 app.get("/urls", (req, res) => {
-  console.log(req.cookies["username"]);
+  if (!req.cookies["user_id"]) {
+    res.redirect("/login");
+  }
+
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies["username"] ? req.cookies["username"] : "",
+    user: users[req.cookies["user_id"]],
   };
   res.render("urls_index", templateVars);
 });
 app.get("/urls/new", (req, res) => {
   const templateVars = {
-    username: req.cookies["username"] ? req.cookies["username"] : "",
+    user: users[req.cookies["user_id"]],
   };
   res.render("urls_new", templateVars);
 });
@@ -48,7 +77,7 @@ app.get("/urls/:id", (req, res) => {
   const templateVars = {
     id: req.params.id,
     longURL: urlDatabase[req.params.id],
-    username: req.cookies["username"],
+    user: users[req.cookies["user_id"]],
   };
   res.render("urls_show", templateVars);
 });
@@ -58,7 +87,7 @@ app.get("/urls.json", (req, res) => {
 });
 app.post("/urls", (req, res) => {
   const newUrl = req.body;
-  newUrl.id = generateRandomString();
+  newUrl.id = generateRandomString(6);
 
   urlDatabase[newUrl.id] = newUrl.longURL;
   res.redirect("/urls");
@@ -73,7 +102,35 @@ app.get("/u/:id", (req, res) => {
   }
   res.redirect(longURL);
 });
+//register get route
+app.get("/register", (req, res) => {
+  templateVars = { user: null };
+  res.render("register", templateVars);
+});
+//register post route
+app.post("/register", (req, res) => {
+  const userId = generateRandomString(6);
+  if (req.body.email === "" || req.body.password === "") {
+    res.status(400).send("Email or password is empty");
+    res.redirect("/register");
+  }
+  if (!getUserByEmail(req.body.email)) {
+    const emailFromForm = req.body.email;
+    const passwordFromForm = req.body.password;
 
+    users[userId] = {
+      id: userId,
+      email: emailFromForm,
+      password: passwordFromForm,
+    };
+
+    res.cookie("user_id", userId);
+    res.redirect("/urls");
+  } else {
+    res.status(400).send("User Email already exists!");
+    res.redirect("/register");
+  }
+});
 //delete
 app.post("/urls/:id/delete", (req, res) => {
   const id = req.params.id;
@@ -88,15 +145,36 @@ app.post("/urls/:id/edit", (req, res) => {
 
   res.redirect("/urls");
 });
-
+app.get("/login", (req, res) => {
+  const templateVars = { user: null };
+  res.render("login", templateVars);
+});
 app.post("/login", (req, res) => {
-  //set cookie equal to username
-  res.cookie("username", req.body.username);
-  res.redirect("/urls");
+  const emailLogin = req.body.email;
+  const pwdLogin = req.body.password;
+
+  //find the user that matches with given email
+  let userFound = getUserByEmail(emailLogin);
+
+  //if a user is found matched with given email, then compare password
+  if (userFound) {
+    if (userFound.password === pwdLogin) {
+      //set cookie equal to user id
+      res.cookie("user_id", userFound.id);
+      res.redirect("/urls");
+    } else {
+      res
+        .status(403)
+        .send("User Email or Password is incorrect! Please try again.");
+    }
+  } else {
+    res.status(403).send("User Not found!");
+    res.redirect("/login");
+  }
 });
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
-  res.redirect("/urls");
+  res.clearCookie("user_id");
+  res.redirect("/login");
 });
 
 app.listen(PORT, () => {
