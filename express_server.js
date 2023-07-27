@@ -66,6 +66,7 @@ app.get("/urls", (req, res) => {
   };
   res.render("urls_index", templateVars);
 });
+//renders to a page to add a new url
 app.get("/urls/new", (req, res) => {
   const templateVars = {
     user: users[req.cookies["user_id"]],
@@ -114,6 +115,7 @@ app.post("/register", (req, res) => {
     res.status(400).send("Email or password is empty");
     res.redirect("/register");
   }
+  //check if user already exists
   if (!getUserByEmail(req.body.email)) {
     const emailFromForm = req.body.email;
     const passwordFromForm = req.body.password;
