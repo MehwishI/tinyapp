@@ -30,8 +30,17 @@ function getUserByEmail(userEmail) {
 }
 
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  // b2xVn2: "http://www.lighthouselabs.ca",
+  // "9sm5xK": "http://www.google.com",
+
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
 };
 //users database
 const users = {
@@ -47,6 +56,21 @@ const users = {
   },
 };
 
+//function to find urls registered by the logged in user
+function urlsForUser(loggedUserId) {
+  //const userId= req.cookies["user_id"];
+  const urlList = {};
+  //console.log(loggedUserId);
+  for (let url in urlDatabase) {
+    if (urlDatabase[url].userID === loggedUserId) {
+      //console.log(urlDatabase[url]);
+      urlList[url] = urlDatabase[url];
+    }
+  }
+  console.log(urlList);
+  return urlList;
+}
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -57,17 +81,21 @@ app.get("/hello", (req, res) => {
 //renders view to show list of all urls
 app.get("/urls", (req, res) => {
   if (!req.cookies["user_id"]) {
-    res.redirect("/login");
+    res.status(400).send("Please login to view Urls!");
   }
-
+  const urlList = urlsForUser(req.cookies["user_id"]);
   const templateVars = {
-    urls: urlDatabase,
+    urls: urlList,
     user: users[req.cookies["user_id"]],
   };
+  //console.log("templateVars:", templateVars);
   res.render("urls_index", templateVars);
 });
 //renders to a page to add a new url
 app.get("/urls/new", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    res.redirect("/login");
+  }
   const templateVars = {
     user: users[req.cookies["user_id"]],
   };
@@ -75,22 +103,46 @@ app.get("/urls/new", (req, res) => {
 });
 //renders a view to show url details
 app.get("/urls/:id", (req, res) => {
-  const templateVars = {
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id],
-    user: users[req.cookies["user_id"]],
-  };
-  res.render("urls_show", templateVars);
+  if (!req.cookies["user_id"]) {
+    res.status(400).send("Please login to view the Url!");
+  }
+  //get urls list for this logged in user
+  const urlListObj = urlsForUser(req.cookies["user_id"]);
+  console.log("urlListObj", urlListObj);
+  //if the requested short URL (id) in found in the urls list of this user then
+  //pass this url data to templateVars
+  if (Object.keys(urlListObj).includes(req.params.id)) {
+    const templateVars = {
+      id: req.params.id,
+      longURL: urlDatabase[req.params.id].longURL,
+      user: users[req.cookies["user_id"]],
+    };
+    res.render("urls_show", templateVars);
+  } else {
+    res
+      .status(403)
+      .send("This short url does not belong to the logged in usser!");
+  }
 });
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 app.post("/urls", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    res.status(403).send("Only logged in users can submit a new url");
+    res.redirect("/login");
+  }
   const newUrl = req.body;
+  //generating a new short Url for the given long url
   newUrl.id = generateRandomString(6);
 
-  urlDatabase[newUrl.id] = newUrl.longURL;
+  //defining a new key to url database
+  urlDatabase[newUrl.id] = {
+    longURL: newUrl.longURL,
+    userID: req.cookies["user_id"],
+  };
+  console.log(urlDatabase);
   res.redirect("/urls");
 });
 //redirects to the long url in browser
@@ -98,25 +150,30 @@ app.get("/u/:id", (req, res) => {
   let longURL = "";
   for (let shortUrl in urlDatabase) {
     if (shortUrl === req.params.id) {
-      longURL = urlDatabase[shortUrl];
+      longURL = urlDatabase[shortUrl].longURL;
+      res.redirect(longURL);
     }
   }
-  res.redirect(longURL);
+
+  res.status(404).send("This short URL does not exist in the system! ");
 });
 //register get route
 app.get("/register", (req, res) => {
+  // if (req.cookies["user_id"] !== null) {
+  //   res.redirect("/urls");
+  // }
   templateVars = { user: null };
   res.render("register", templateVars);
 });
 //register post route
 app.post("/register", (req, res) => {
-  const userId = generateRandomString(6);
   if (req.body.email === "" || req.body.password === "") {
     res.status(400).send("Email or password is empty");
     res.redirect("/register");
   }
   //check if user already exists
   if (!getUserByEmail(req.body.email)) {
+    const userId = generateRandomString(6);
     const emailFromForm = req.body.email;
     const passwordFromForm = req.body.password;
 
@@ -135,19 +192,71 @@ app.post("/register", (req, res) => {
 });
 //delete
 app.post("/urls/:id/delete", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    res.status(400).send("Please login to delete the Url!");
+  }
   const id = req.params.id;
-  delete urlDatabase[id];
+
+  if (Object.keys(urlDatabase).includes(id)) {
+    //get urls list for this logged in user
+    const urlListObj = urlsForUser(req.cookies["user_id"]);
+
+    //if the requested short URL (id) in found in the urls list of this user then
+    //update the url
+    if (Object.keys(urlListObj).includes(id)) {
+      delete urlDatabase[id];
+      res.redirect("/urls");
+    } else {
+      res
+        .status(403)
+        .send(
+          "This url cannot be deleted as it does not belong to the logged in usser!"
+        );
+    }
+  } else {
+    res
+      .status(403)
+      .send(
+        "This url cannot be deleted because it doesnot exist in the system!"
+      );
+  }
 
   res.redirect("/urls");
 });
-//edit
+//edit a url
 app.post("/urls/:id/edit", (req, res) => {
-  const id = req.params.id;
-  urlDatabase[id] = req.body.newLongUrl;
+  if (!req.cookies["user_id"]) {
+    res.status(400).send("Please login to edit the Url!");
+  }
+  if (Object.keys(urlDatabase).includes(req.params.id)) {
+    //get urls list for this logged in user
+    const urlListObj = urlsForUser(req.cookies["user_id"]);
 
-  res.redirect("/urls");
+    //if the requested short URL (id) in found in the urls list of this user then
+    //update the url
+    if (Object.keys(urlListObj).includes(req.params.id)) {
+      const id = req.params.id;
+      urlDatabase[id].longURL = req.body.newLongUrl;
+      res.redirect("/urls");
+    } else {
+      res
+        .status(403)
+        .send(
+          "This url cannot be edited as it does not belong to the logged in usser!"
+        );
+    }
+  } else {
+    res
+      .status(403)
+      .send(
+        "This url cannot be edited because it doesnot exist in the system!"
+      );
+  }
 });
 app.get("/login", (req, res) => {
+  if (req.cookies["user_id"]) {
+    res.redirect("/urls");
+  }
   const templateVars = { user: null };
   res.render("login", templateVars);
 });
@@ -157,7 +266,7 @@ app.post("/login", (req, res) => {
 
   //find the user that matches with given email
   let userFound = getUserByEmail(emailLogin);
-
+  console.log(userFound);
   //if a user is found matched with given email, then compare password
   if (userFound) {
     if (userFound.password === pwdLogin) {
