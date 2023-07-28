@@ -1,6 +1,7 @@
 const express = require("express");
 const morgan = require("morgan");
 var cookieParser = require("cookie-parser");
+const bcrypt = require("bcryptjs");
 
 const app = express();
 const PORT = 8080; // default port 8080
@@ -58,16 +59,14 @@ const users = {
 
 //function to find urls registered by the logged in user
 function urlsForUser(loggedUserId) {
-  //const userId= req.cookies["user_id"];
   const urlList = {};
-  //console.log(loggedUserId);
+
   for (let url in urlDatabase) {
     if (urlDatabase[url].userID === loggedUserId) {
-      //console.log(urlDatabase[url]);
       urlList[url] = urlDatabase[url];
     }
   }
-  console.log(urlList);
+
   return urlList;
 }
 
@@ -175,12 +174,15 @@ app.post("/register", (req, res) => {
   if (!getUserByEmail(req.body.email)) {
     const userId = generateRandomString(6);
     const emailFromForm = req.body.email;
-    const passwordFromForm = req.body.password;
+
+    const passwordFromBody = req.body.password;
+    const hashedPassword = bcrypt.hashSync(passwordFromBody, 10);
+    console.log(hashedPassword);
 
     users[userId] = {
       id: userId,
       email: emailFromForm,
-      password: passwordFromForm,
+      password: hashedPassword,
     };
 
     res.cookie("user_id", userId);
@@ -269,7 +271,8 @@ app.post("/login", (req, res) => {
   console.log(userFound);
   //if a user is found matched with given email, then compare password
   if (userFound) {
-    if (userFound.password === pwdLogin) {
+    if (bcrypt.compareSync(pwdLogin, userFound.password)) {
+      //if (userFound.password === pwdLogin) {
       //set cookie equal to user id
       res.cookie("user_id", userFound.id);
       res.redirect("/urls");
