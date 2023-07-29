@@ -3,6 +3,9 @@ const morgan = require("morgan");
 var cookieParser = require("cookie-parser");
 var cookieSession = require("cookie-session");
 
+const { getUserByEmail } = require("./helpers");
+var methodOverride = require("method-override");
+
 const bcrypt = require("bcryptjs");
 
 const app = express();
@@ -23,6 +26,8 @@ app.use(
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
   })
 );
+// override with POST having ?_method=DELETE
+app.use(methodOverride("_method"));
 
 //view engine
 app.set("view engine", "ejs");
@@ -33,14 +38,6 @@ function generateRandomString(i) {
     .slice(2, i + 2);
 }
 //finds the given user email in users object (database) and returns the user
-function getUserByEmail(userEmail) {
-  for (let id in users) {
-    if (users[id].email === userEmail) {
-      return users[id];
-    }
-  }
-  return null;
-}
 
 const urlDatabase = {
   // b2xVn2: "http://www.lighthouselabs.ca",
@@ -179,7 +176,7 @@ app.post("/register", (req, res) => {
     res.redirect("/register");
   }
   //check if user already exists
-  if (!getUserByEmail(req.body.email)) {
+  if (!getUserByEmail(req.body.email, users)) {
     const userId = generateRandomString(6);
     const emailFromForm = req.body.email;
 
@@ -201,7 +198,7 @@ app.post("/register", (req, res) => {
   }
 });
 //delete
-app.post("/urls/:id/delete", (req, res) => {
+app.delete("/urls/:id/?_method=DELETE", (req, res) => {
   if (!req.session.user_id) {
     res.status(400).send("Please login to delete the Url!");
   }
@@ -234,7 +231,7 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 //edit a url
-app.post("/urls/:id/edit", (req, res) => {
+app.put("/urls/:id/?_method=PUT", (req, res) => {
   if (!req.session.user_id) {
     res.status(400).send("Please login to edit the Url!");
   }
@@ -275,7 +272,7 @@ app.post("/login", (req, res) => {
   const pwdLogin = req.body.password;
 
   //find the user that matches with given email
-  let userFound = getUserByEmail(emailLogin);
+  let userFound = getUserByEmail(emailLogin, users);
 
   //if a user is found matched with given email, then compare password
   if (userFound) {

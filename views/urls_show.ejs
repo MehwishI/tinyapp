@@ -28,8 +28,9 @@
             class="form-inline text-center"
             text-align="center"
             method="post"
-            action="/urls/<%= id %>/edit"
+            action="/urls/<%= id %>?_method=PUT"
           >
+            <input type="hidden" name="_method" value="PUT" />
             <label for="newLongUrl">Enter new URL:</label>
             <input
               class="form-control"

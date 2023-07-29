@@ -38,7 +38,8 @@
             <td>
               <a href="/urls/<%=id %>"> Edit url </a>
             </td>
-            <td><form method="POST" action="/urls/<%=id %>/delete">
+            <td><form method="POST" action="/urls/<%=id%>?_method=DELETE">
+              <input type="hidden" name="_method" value="DELETE">
                   <button type="submit" class="btn btn-primary">Delete</button>
                 </form>
             </td>
