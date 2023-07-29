@@ -198,7 +198,7 @@ app.post("/register", (req, res) => {
   }
 });
 //delete
-app.delete("/urls/:id/?_method=DELETE", (req, res) => {
+app.delete("/urls/:id", (req, res) => {
   if (!req.session.user_id) {
     res.status(400).send("Please login to delete the Url!");
   }
@@ -231,7 +231,7 @@ app.delete("/urls/:id/?_method=DELETE", (req, res) => {
   res.redirect("/urls");
 });
 //edit a url
-app.put("/urls/:id/?_method=PUT", (req, res) => {
+app.put("/urls/:id", (req, res) => {
   if (!req.session.user_id) {
     res.status(400).send("Please login to edit the Url!");
   }
