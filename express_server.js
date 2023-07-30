@@ -1,3 +1,4 @@
+//import modules
 const express = require("express");
 const morgan = require("morgan");
 var cookieParser = require("cookie-parser");
@@ -72,7 +73,7 @@ app.get("/", (req, res) => {
   res.redirect("/urls");
 });
 app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
+  res.send("<html><body>Hello <b>User!</b></body></html>\n");
 });
 
 //renders view to show list of all urls
@@ -87,7 +88,7 @@ app.get("/urls", (req, res) => {
   };
   res.render("urls_index", templateVars);
 });
-//renders to a page to add a new url
+//renders a page to add a new url
 app.get("/urls/new", (req, res) => {
   if (!req.session.user_id) {
     res.redirect("/login");
@@ -105,6 +106,7 @@ app.get("/urls/:id", (req, res) => {
   //get urls list for this logged in user
   const urlListObj = urlsForUser(req.session.user_id, urlDatabase);
 
+  //increases the no.of visits for this particular shotrt url id
   urlDatabase[req.params.id].url_visited++;
 
   //if the requested short URL (id) in found in the urls list of this user then
@@ -119,7 +121,7 @@ app.get("/urls/:id", (req, res) => {
       current_date:
         new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(),
     };
-    req.session.url_visited++;
+
     res.render("urls_show", templateVars);
   } else {
     res
@@ -180,6 +182,7 @@ app.post("/register", (req, res) => {
     const emailFromForm = req.body.email;
 
     const passwordFromBody = req.body.password;
+    //hash the password and then saves it in users object
     const hashedPassword = bcrypt.hashSync(passwordFromBody, 10);
 
     users[userId] = {
@@ -188,6 +191,7 @@ app.post("/register", (req, res) => {
       password: hashedPassword,
     };
 
+    //set current session userid equals to current user id
     req.session.user_id = userId;
     res.redirect("/urls");
   } else {
@@ -258,6 +262,8 @@ app.put("/urls/:id", (req, res) => {
       );
   }
 });
+
+//gets login page
 app.get("/login", (req, res) => {
   if (req.session.user_id) {
     res.redirect("/urls");
@@ -289,6 +295,7 @@ app.post("/login", (req, res) => {
     res.redirect("/login");
   }
 });
+//logout clears cookies
 app.post("/logout", (req, res) => {
   req.session = null;
   //res.clearCookie("user_id");
