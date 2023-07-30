@@ -7,11 +7,11 @@ It displays a list of urls saved by a user.
 
 ## Final Product
 
-![Create new Account](screenshots/image-2.png)
-![Login page](screenshots/image-3.png)
-![Create a Tiny URL](screenshots/image-4.png)
-![Lis of My URLs](screenshots/image.png)
-![URL Details and Edit](screenshots/image-1.png)
+![screenshot of Create new Account page](https://github.com/MehwishI/tinyapp/blob/master/docs/create-account.png?raw=true)
+![Screenshot of Login page](https://github.com/MehwishI/tinyapp/blob/master/docs/user-login.png?raw=true)
+![Screenshot of Create a Tiny URL page](https://github.com/MehwishI/tinyapp/blob/master/docs/create-a-tiny-url.png?raw=true)
+![Screenshot of List of My URLs page](https://github.com/MehwishI/tinyapp/blob/master/docs/list-of-urls.png?raw=true)
+![Screenshot of URL Details and Edit page](https://github.com/MehwishI/tinyapp/blob/master/docs/show-details-edit.png?raw=true)
 
 ## Dependencies
 
