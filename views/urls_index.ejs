@@ -19,12 +19,16 @@
   <body>
     <%- include('partials/_header') %>
     <main style="margin: 1em">
+      <if
       <h3>My URLs</h3>
       <table class="table">
         <thead>
           <tr>
             <th scope="col">Short URL ID</th>
             <th scope="col">Long URL</th>
+            <th scope="col">Date of Creation</th>
+            <th scope="col">No. of times visited</th>
+
             <th>Edit</th>
             <th>Delete</th>
           </tr>
@@ -35,6 +39,8 @@
           <tr>
             <td><%= id %></td>
             <td><%=urls[id].longURL  %></td> 
+            <td><%=urls[id].createdDate %></td>
+            <td><%=urls[id].url_visited %></td>
             <td>
               <a href="/urls/<%=id %>"> Edit url </a>
             </td>

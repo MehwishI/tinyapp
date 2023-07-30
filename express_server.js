@@ -3,9 +3,13 @@ const morgan = require("morgan");
 var cookieParser = require("cookie-parser");
 var cookieSession = require("cookie-session");
 
-const { getUserByEmail } = require("./helpers");
-var methodOverride = require("method-override");
+const {
+  getUserByEmail,
+  urlsForUser,
+  generateRandomString,
+} = require("./helpers");
 
+var methodOverride = require("method-override");
 const bcrypt = require("bcryptjs");
 
 const app = express();
@@ -32,24 +36,19 @@ app.use(methodOverride("_method"));
 //view engine
 app.set("view engine", "ejs");
 
-function generateRandomString(i) {
-  return Math.random()
-    .toString(36)
-    .slice(2, i + 2);
-}
-//finds the given user email in users object (database) and returns the user
-
+//database of urls
 const urlDatabase = {
-  // b2xVn2: "http://www.lighthouselabs.ca",
-  // "9sm5xK": "http://www.google.com",
-
   b6UTxQ: {
     longURL: "https://www.tsn.ca",
     userID: "aJ48lW",
+    createdDate: "",
+    url_visited: 0,
   },
   i3BoGr: {
     longURL: "https://www.google.ca",
     userID: "aJ48lW",
+    createdDate: "",
+    url_visited: 0,
   },
 };
 //users database
@@ -66,21 +65,11 @@ const users = {
   },
 };
 
-//function to find urls registered by the logged in user
-function urlsForUser(loggedUserId) {
-  const urlList = {};
-
-  for (let url in urlDatabase) {
-    if (urlDatabase[url].userID === loggedUserId) {
-      urlList[url] = urlDatabase[url];
-    }
-  }
-
-  return urlList;
-}
-
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  if (!req.session.user_id) {
+    res.redirect("/login");
+  }
+  res.redirect("/urls");
 });
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
@@ -91,7 +80,7 @@ app.get("/urls", (req, res) => {
   if (!req.session.user_id) {
     res.status(400).send("Please login to view Urls!");
   }
-  const urlList = urlsForUser(req.session.user_id);
+  const urlList = urlsForUser(req.session.user_id, urlDatabase);
   const templateVars = {
     urls: urlList,
     user: users[req.session.user_id],
@@ -114,21 +103,28 @@ app.get("/urls/:id", (req, res) => {
     res.status(400).send("Please login to view the Url!");
   }
   //get urls list for this logged in user
-  const urlListObj = urlsForUser(req.session.user_id);
-  console.log("urlListObj", urlListObj);
+  const urlListObj = urlsForUser(req.session.user_id, urlDatabase);
+
+  urlDatabase[req.params.id].url_visited++;
+
   //if the requested short URL (id) in found in the urls list of this user then
   //pass this url data to templateVars
   if (Object.keys(urlListObj).includes(req.params.id)) {
     const templateVars = {
       id: req.params.id,
       longURL: urlDatabase[req.params.id].longURL,
+      createdDate: urlDatabase[req.params.id].createdDate,
       user: users[req.session.user_id],
+      url_visited: urlDatabase[req.params.id].url_visited,
+      current_date:
+        new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(),
     };
+    req.session.url_visited++;
     res.render("urls_show", templateVars);
   } else {
     res
       .status(403)
-      .send("This short url does not belong to the logged in usser!");
+      .send("This short url does not belong to the current logged in user!");
   }
 });
 
@@ -148,9 +144,12 @@ app.post("/urls", (req, res) => {
   urlDatabase[newUrl.id] = {
     longURL: newUrl.longURL,
     userID: req.session.user_id,
+    createdDate:
+      new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(),
+    url_visited: 0,
   };
-  console.log(urlDatabase);
-  res.redirect("/urls");
+
+  res.redirect(`/urls/${newUrl.id}`);
 });
 //redirects to the long url in browser
 app.get("/u/:id", (req, res) => {
@@ -182,7 +181,6 @@ app.post("/register", (req, res) => {
 
     const passwordFromBody = req.body.password;
     const hashedPassword = bcrypt.hashSync(passwordFromBody, 10);
-    console.log(hashedPassword);
 
     users[userId] = {
       id: userId,
@@ -206,7 +204,7 @@ app.delete("/urls/:id", (req, res) => {
 
   if (Object.keys(urlDatabase).includes(id)) {
     //get urls list for this logged in user
-    const urlListObj = urlsForUser(req.session.user_id);
+    const urlListObj = urlsForUser(req.session.user_id, urlsForUser);
 
     //if the requested short URL (id) in found in the urls list of this user then
     //update the url
@@ -237,7 +235,7 @@ app.put("/urls/:id", (req, res) => {
   }
   if (Object.keys(urlDatabase).includes(req.params.id)) {
     //get urls list for this logged in user
-    const urlListObj = urlsForUser(req.session.user_id);
+    const urlListObj = urlsForUser(req.session.user_id, urlDatabase);
 
     //if the requested short URL (id) in found in the urls list of this user then
     //update the url

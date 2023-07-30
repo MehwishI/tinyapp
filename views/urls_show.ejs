@@ -19,7 +19,11 @@
       <div class="card-body">
         <h5 class="card-title">TinyURL for: <%= longURL %></h5>
         <p class="card-text">
-          Short URL ID: <a href="/u/<%= id %>"><%= id %></a>
+          Short URL ID: <a href="/u/<%= id %>"><%= id %></a><br />
+          Date of Creation: <%= createdDate %><br />
+
+          Date of visit: <%=current_date %> <br />
+          No. of times visited: <%= url_visited %>
         </p>
 
         <div class="form-group mb-2 text-center">
@@ -31,15 +35,17 @@
             action="/urls/<%= id %>?_method=PUT"
           >
             <input type="hidden" name="_method" value="PUT" />
-            <label for="newLongUrl">Enter new URL:</label>
+            <label for="newLongUrl" class="text-center">Enter new URL:</label>
             <input
               class="form-control"
               type="text"
               name="newLongUrl"
               placeholder="<%= longURL %>"
               style="width: 300px; margin: 1em"
+              required
             />
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="submit" class="btn btn-primary">Submit</button> <br />
+            <a href="/urls/new"> Create a New Short Link</a>
           </form>
         </div>
       </div>
