@@ -1,7 +1,7 @@
 //import modules
 const express = require("express");
 const morgan = require("morgan");
-var cookieParser = require("cookie-parser");
+
 var cookieSession = require("cookie-session");
 
 const {
@@ -19,7 +19,7 @@ const PORT = 8080; // default port 8080
 
 //middleware
 app.use(morgan("dev"));
-app.use(cookieParser());
+
 //for POST request, to parse the data sent as buffer into more readable data type
 app.use(express.urlencoded({ extended: true }));
 
@@ -136,8 +136,9 @@ app.get("/u/:id", (req, res) => {
       res.redirect(longURL);
     }
   }
-
-  res.status(404).send("This short URL does not exist in the system! ");
+  if (longURL === "") {
+    res.status(404).send("This short URL does not exist in the system! ");
+  }
 });
 //register get route
 app.get("/register", (req, res) => {
