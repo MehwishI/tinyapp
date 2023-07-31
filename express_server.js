@@ -10,6 +10,7 @@ const {
   generateRandomString,
 } = require("./helpers");
 
+let { users, urlDatabase } = require("./data");
 var methodOverride = require("method-override");
 const bcrypt = require("bcryptjs");
 
@@ -36,35 +37,6 @@ app.use(methodOverride("_method"));
 
 //view engine
 app.set("view engine", "ejs");
-
-//database of urls
-const urlDatabase = {
-  b6UTxQ: {
-    longURL: "https://www.tsn.ca",
-    userID: "aJ48lW",
-    createdDate: "",
-    url_visited: 0,
-  },
-  i3BoGr: {
-    longURL: "https://www.google.ca",
-    userID: "aJ48lW",
-    createdDate: "",
-    url_visited: 0,
-  },
-};
-//users database
-const users = {
-  userRandomID: {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "purple",
-  },
-  user2RandomID: {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk",
-  },
-};
 
 app.get("/", (req, res) => {
   if (!req.session.user_id) {
@@ -135,8 +107,10 @@ app.get("/urls.json", (req, res) => {
 });
 app.post("/urls", (req, res) => {
   if (!req.session.user_id) {
-    res.status(403).send("Only logged in users can submit a new url");
-    res.redirect("/login");
+    res
+      .status(403)
+      .send("Only logged in users can submit a new url, Please login first.");
+    //res.redirect("/login");
   }
   const newUrl = req.body;
   //generating a new short Url for the given long url
@@ -174,7 +148,6 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {
     res.status(400).send("Email or password is empty");
-    res.redirect("/register");
   }
   //check if user already exists
   if (!getUserByEmail(req.body.email, users)) {
@@ -196,7 +169,7 @@ app.post("/register", (req, res) => {
     res.redirect("/urls");
   } else {
     res.status(400).send("User Email already exists!");
-    res.redirect("/register");
+    //res.redirect("/register");
   }
 });
 //delete
@@ -208,13 +181,13 @@ app.delete("/urls/:id", (req, res) => {
 
   if (Object.keys(urlDatabase).includes(id)) {
     //get urls list for this logged in user
-    const urlListObj = urlsForUser(req.session.user_id, urlsForUser);
+    const urlListObj = urlsForUser(req.session.user_id, urlDatabase);
+    //console.log("urlListObj:", urlListObj);
 
     //if the requested short URL (id) in found in the urls list of this user then
     //update the url
     if (Object.keys(urlListObj).includes(id)) {
       delete urlDatabase[id];
-      res.redirect("/urls");
     } else {
       res
         .status(403)
@@ -292,7 +265,6 @@ app.post("/login", (req, res) => {
     }
   } else {
     res.status(403).send("User Not found!");
-    res.redirect("/login");
   }
 });
 //logout clears cookies
