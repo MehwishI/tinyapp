@@ -52,53 +52,58 @@ app.get("/hello", (req, res) => {
 app.get("/urls", (req, res) => {
   if (!req.session.user_id) {
     res.status(400).send("Please login to view Urls!");
+  } else {
+    const urlList = urlsForUser(req.session.user_id, urlDatabase);
+    const templateVars = {
+      urls: urlList,
+      user: users[req.session.user_id],
+    };
+    res.render("urls_index", templateVars);
   }
-  const urlList = urlsForUser(req.session.user_id, urlDatabase);
-  const templateVars = {
-    urls: urlList,
-    user: users[req.session.user_id],
-  };
-  res.render("urls_index", templateVars);
 });
 //renders a page to add a new url
 app.get("/urls/new", (req, res) => {
   if (!req.session.user_id) {
     res.redirect("/login");
+  } else {
+    const templateVars = {
+      user: users[req.session.user_id],
+    };
+    res.render("urls_new", templateVars);
   }
-  const templateVars = {
-    user: users[req.session.user_id],
-  };
-  res.render("urls_new", templateVars);
 });
 //renders a view to show url details
 app.get("/urls/:id", (req, res) => {
   if (!req.session.user_id) {
     res.status(400).send("Please login to view the Url!");
-  }
-  //get urls list for this logged in user
-  const urlListObj = urlsForUser(req.session.user_id, urlDatabase);
-
-  //increases the no.of visits for this particular shotrt url id
-  urlDatabase[req.params.id].url_visited++;
-
-  //if the requested short URL (id) in found in the urls list of this user then
-  //pass this url data to templateVars
-  if (Object.keys(urlListObj).includes(req.params.id)) {
-    const templateVars = {
-      id: req.params.id,
-      longURL: urlDatabase[req.params.id].longURL,
-      createdDate: urlDatabase[req.params.id].createdDate,
-      user: users[req.session.user_id],
-      url_visited: urlDatabase[req.params.id].url_visited,
-      current_date:
-        new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(),
-    };
-
-    res.render("urls_show", templateVars);
   } else {
-    res
-      .status(403)
-      .send("This short url does not belong to the current logged in user!");
+    //get urls list for this logged in user
+    const urlListObj = urlsForUser(req.session.user_id, urlDatabase);
+
+    //increases the no.of visits for this particular shotrt url id
+    urlDatabase[req.params.id].url_visited++;
+
+    //if the requested short URL (id) in found in the urls list of this user then
+    //pass this url data to templateVars
+    if (Object.keys(urlListObj).includes(req.params.id)) {
+      const templateVars = {
+        id: req.params.id,
+        longURL: urlDatabase[req.params.id].longURL,
+        createdDate: urlDatabase[req.params.id].createdDate,
+        user: users[req.session.user_id],
+        url_visited: urlDatabase[req.params.id].url_visited,
+        current_date:
+          new Date().toLocaleDateString() +
+          " " +
+          new Date().toLocaleTimeString(),
+      };
+
+      res.render("urls_show", templateVars);
+    } else {
+      res
+        .status(403)
+        .send("This short url does not belong to the current logged in user!");
+    }
   }
 });
 
@@ -210,30 +215,31 @@ app.delete("/urls/:id", (req, res) => {
 app.put("/urls/:id", (req, res) => {
   if (!req.session.user_id) {
     res.status(400).send("Please login to edit the Url!");
-  }
-  if (Object.keys(urlDatabase).includes(req.params.id)) {
-    //get urls list for this logged in user
-    const urlListObj = urlsForUser(req.session.user_id, urlDatabase);
+  } else {
+    if (Object.keys(urlDatabase).includes(req.params.id)) {
+      //get urls list for this logged in user
+      const urlListObj = urlsForUser(req.session.user_id, urlDatabase);
 
-    //if the requested short URL (id) in found in the urls list of this user then
-    //update the url
-    if (Object.keys(urlListObj).includes(req.params.id)) {
-      const id = req.params.id;
-      urlDatabase[id].longURL = req.body.newLongUrl;
-      res.redirect("/urls");
+      //if the requested short URL (id) in found in the urls list of this user then
+      //update the url
+      if (Object.keys(urlListObj).includes(req.params.id)) {
+        const id = req.params.id;
+        urlDatabase[id].longURL = req.body.newLongUrl;
+        res.redirect("/urls");
+      } else {
+        res
+          .status(403)
+          .send(
+            "This url cannot be edited as it does not belong to the logged in usser!"
+          );
+      }
     } else {
       res
         .status(403)
         .send(
-          "This url cannot be edited as it does not belong to the logged in usser!"
+          "This url cannot be edited because it doesnot exist in the system!"
         );
     }
-  } else {
-    res
-      .status(403)
-      .send(
-        "This url cannot be edited because it doesnot exist in the system!"
-      );
   }
 });
 
@@ -241,9 +247,10 @@ app.put("/urls/:id", (req, res) => {
 app.get("/login", (req, res) => {
   if (req.session.user_id) {
     res.redirect("/urls");
+  } else {
+    const templateVars = { user: null };
+    res.render("login", templateVars);
   }
-  const templateVars = { user: null };
-  res.render("login", templateVars);
 });
 app.post("/login", (req, res) => {
   const emailLogin = req.body.email;
@@ -270,8 +277,9 @@ app.post("/login", (req, res) => {
 });
 //logout clears cookies
 app.post("/logout", (req, res) => {
+  //clears session
   req.session = null;
-  //res.clearCookie("user_id");
+
   res.redirect("/login");
 });
 
